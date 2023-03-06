@@ -1,0 +1,32 @@
+
+
+with cte_union as
+(
+    select 0 period_state, fail_date dt
+    from failed where fail_date >= '2019-01-01' and fail_date < '2020-01-01'
+    union
+    select 1 period_state, success_date dt
+    from succeeded where success_date >= '2019-01-01' and success_date < '2020-01-01'
+)
+
+
+
+, cte_final as 
+(
+    select 
+        period_state
+    ,   dt
+    ,   row_number() over(order by dt) - row_number() over(partition by period_state order by period_state,dt) diff
+    from cte_union
+)
+
+
+select 
+    case when period_state = 0 then 'failed' else 'succeeded' end period_state
+,   min(dt) start_date
+,   max(dt) end_date
+from cte_final
+group by period_state,diff
+order by dt
+
+
